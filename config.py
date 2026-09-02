@@ -1,92 +1,45 @@
 """
-config.py — Sign2Voice
-======================
-Single source of truth for all configurable constants.
-All modules import from here; nothing is hardcoded elsewhere.
+src/config.py
+-------------
+Central configuration for Multilingual & Personalized Sign Language System.
+Manages data paths, model paths, landmark parameters, thresholds, and environment variables.
 """
 
 import os
-from dotenv import load_dotenv
+from pathlib import Path
 
-# Load .env from the project root (silently ignores missing file)
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
+ASL_DATA_DIR = DATA_DIR / "asl"
+ISL_DATA_DIR = DATA_DIR / "isl"
+BSL_DATA_DIR = DATA_DIR / "bsl"
+CUSTOM_DATA_DIR = DATA_DIR / "custom"
+STATIC_DIR = BASE_DIR / "static"
 
-# ──────────────────────────────────────────────────────────────────────────────
-# GESTURE PROCESSING
-# ──────────────────────────────────────────────────────────────────────────────
+DB_PATH = DATA_DIR / "sign_system.db"
 
-# Minimum ML confidence score to even consider a gesture (0.0 – 1.0)
-CONFIDENCE_THRESHOLD: float = float(os.getenv("CONFIDENCE_THRESHOLD", "0.75"))
+STATIC_MODEL_PATH = BASE_DIR / "static_gesture_model.pkl"
+DYNAMIC_MODEL_PATH = BASE_DIR / "dynamic_gesture_model.pkl"
 
-# Number of consecutive identical predictions required before accepting
-STABILITY_WINDOW: int = int(os.getenv("STABILITY_WINDOW", "3"))
+LANDMARKS_PER_HAND = 21
+COORDS_PER_LANDMARK = 3
+FEATURES_PER_HAND = LANDMARKS_PER_HAND * COORDS_PER_LANDMARK  # 63
+TOTAL_FRAME_FEATURES = FEATURES_PER_HAND * 2  # 126
+SEQUENCE_LENGTH = 30
+TOTAL_DYNAMIC_FEATURES = SEQUENCE_LENGTH * TOTAL_FRAME_FEATURES  # 3780
 
-# Seconds that must pass before the next gesture can be accepted
-GESTURE_COOLDOWN: float = float(os.getenv("GESTURE_COOLDOWN", "1.5"))
+MOTION_ENERGY_THRESHOLD = 0.038
+CONFIDENCE_THRESHOLD = 0.65
+HELP_PERSISTENCE_SECONDS = 5.0
+DEBOUNCE_INTERVAL_SECONDS = 1.2
 
-# ──────────────────────────────────────────────────────────────────────────────
-# OPENAI
-# ──────────────────────────────────────────────────────────────────────────────
+MIN_CUSTOM_SAMPLES_REQUIRED = 3
+RECOMMENDED_CUSTOM_SAMPLES = 5
 
-# Never hardcode keys — always read from environment
-OPENAI_API_KEY: str | None = os.getenv("OPENAI_API_KEY")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL_NAME = os.environ.get("GEMINI_MODEL_NAME", "gemini-2.5-flash")
 
-# Model used for sentence improvement (cheap + fast for hackathon)
-OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+SUPPORTED_LANGUAGES = ["ASL", "ISL", "BSL", "CUSTOM"]
 
-# Seconds before an OpenAI request is considered timed out
-OPENAI_TIMEOUT: float = float(os.getenv("OPENAI_TIMEOUT", "10.0"))
-
-# ──────────────────────────────────────────────────────────────────────────────
-# TEXT-TO-SPEECH  (gTTS)
-# ──────────────────────────────────────────────────────────────────────────────
-
-# BCP-47 language code for gTTS
-TTS_LANGUAGE: str = os.getenv("TTS_LANGUAGE", "en")
-
-# Use gTTS slow mode (clearer but slower)
-TTS_SLOW: bool = os.getenv("TTS_SLOW", "false").lower() == "true"
-
-# ──────────────────────────────────────────────────────────────────────────────
-# ML & ASSETS
-# ──────────────────────────────────────────────────────────────────────────────
-
-STATIC_MODEL_PATH: str = os.getenv("STATIC_MODEL_PATH", "static_gesture_model.pkl")
-DYNAMIC_MODEL_PATH: str = os.getenv("DYNAMIC_MODEL_PATH", "dynamic_gesture_model.pkl")
-HAND_LANDMARKER_PATH: str = os.getenv("HAND_LANDMARKER_PATH", "hand_landmarker.task")
-
-# Supported signs metadata for reference and UI display
-SUPPORTED_SIGNS: list[tuple[str, str, str]] = [
-    ("👋", "Hello", "A warm greeting to start a conversation."),
-    ("👍", "Yes", "Confirm, agree, or acknowledge clearly."),
-    ("👎", "No", "Politely communicate a negative response."),
-    ("🙏", "Thank You", "Express appreciation with confidence."),
-    ("🤲", "Please", "Make a courteous request."),
-    ("🆘", "Help", "Ask for assistance when it matters most."),
-    ("💧", "Water", "Request water or hydration."),
-    ("✋", "Need", "Express necessity or requirement."),
-]
-
-# ──────────────────────────────────────────────────────────────────────────────
-# DEMO / MOCK MODE
-# ──────────────────────────────────────────────────────────────────────────────
-
-# When True, a scripted gesture sequence is injected instead of live ML input.
-DEMO_MODE: bool = os.getenv("DEMO_MODE", "false").lower() == "true"
-
-# Pre-scripted gestures for demo mode (repeats simulate stabilisation frames)
-DEMO_GESTURE_SEQUENCE: list[dict] = [
-    {"gesture": "hello", "confidence": 0.95},
-    {"gesture": "hello", "confidence": 0.96},
-    {"gesture": "hello", "confidence": 0.97},
-    {"gesture": "i",     "confidence": 0.91},
-    {"gesture": "i",     "confidence": 0.92},
-    {"gesture": "i",     "confidence": 0.93},
-    {"gesture": "need",  "confidence": 0.88},
-    {"gesture": "need",  "confidence": 0.89},
-    {"gesture": "need",  "confidence": 0.90},
-    {"gesture": "help",  "confidence": 0.93},
-    {"gesture": "help",  "confidence": 0.94},
-    {"gesture": "help",  "confidence": 0.95},
-]
-
+for p in (DATA_DIR, ASL_DATA_DIR, ISL_DATA_DIR, BSL_DATA_DIR, CUSTOM_DATA_DIR):
+    p.mkdir(parents=True, exist_ok=True)
